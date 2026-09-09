@@ -13,12 +13,12 @@ t = df_acc["seconds_elapsed"].to_numpy()
 sampling_rate_hz = 1 / np.mean(np.diff(t))
 
 # Same starting parameters as the manual version, for a fair comparison
-HEIGHT_THRESHOLD = 2.0
+HEIGHT_THRESHOLD = 1.0
 MIN_STEP_GAP_S = 0.4
 min_step_gap_samples = int(MIN_STEP_GAP_S * sampling_rate_hz)
 
 # Returns array of accepted indices (and a dict on extra info about each one)
-peak_indices, _properties = find_peaks(mag, height=HEIGHT_THRESHOLD, distance=min_step_gap_samples)
+peak_indices, _properties = find_peaks(mag, prominence=HEIGHT_THRESHOLD, distance=min_step_gap_samples)
 
 print(f"Detected {len(peak_indices)} steps (expected roughly 18)")
 
