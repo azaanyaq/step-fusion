@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-df_gyr = pd.read_csv("/Users/azaanyaqub/Developer/kalman-filter/iphone-project/data/raw/demo_3/Gyroscope.csv")
+df_gyr = pd.read_csv("/Users/azaanyaqub/Developer/kalman-filter/iphone-project/data/raw/demo_4/Gyroscope.csv")
 
 t = df_gyr["seconds_elapsed"].to_numpy()
 yaw_rate = df_gyr["z"].to_numpy() # Rotation rate around the phone's vertical axis (in rad/s)

@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from scipy.signal import find_peaks
 
-df_acc = pd.read_csv("/Users/azaanyaqub/Developer/kalman-filter/iphone-project/data/raw/demo_3/Accelerometer.csv")
+df_acc = pd.read_csv("/Users/azaanyaqub/Developer/kalman-filter/iphone-project/data/raw/demo_4/Accelerometer.csv")
 
 df_acc["magnitude"] = ( df_acc["x"]**2 + df_acc["y"]**2 + df_acc["z"]**2 ) ** 0.5
 
