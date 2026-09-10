@@ -29,7 +29,7 @@ t_gyr = df_gyr["seconds_elapsed"].to_numpy()
 yaw_rate = df_gyr["z"].to_numpy() # Rotation rate around the phone's vertical axis (in rad/s)
 
 # Time gap between each sample and the prior one
-dt = np.diff(t_gyr, prepend=t_gyr[0]) # prepend inserts a virtual point = t[0] first so dt[0] = 0
+dt = np.diff(t_gyr, prepend=t_gyr[0]) # Prepend inserts a virtual point = t[0] first so dt[0] = 0
 
 # Discrete integration ( sigma(w*dt) ) to get the angle in rads
 heading_rad = np.cumsum(yaw_rate * dt)
@@ -39,12 +39,11 @@ heading_rad = np.cumsum(yaw_rate * dt)
 # Set parameter
 STEP_LENGTH_M = 0.73
 
-step_times = t_acc[peak_indices] # seconds, from your step detector's timeline
-step_headings = np.interp(step_times, t_gyr, heading_rad) # heading at each step time
+step_times = t_acc[peak_indices] # Seconds from your step detector's timeline
+step_headings = np.interp(step_times, t_gyr, heading_rad) # Heading at each step time
 
 x, y = [0.0], [0.0]
 
-# The loop
 for i in range(len(step_headings)):
     x_current = x[i] + STEP_LENGTH_M * np.cos(step_headings[i])
     y_current = y[i] + STEP_LENGTH_M * np.sin(step_headings[i])

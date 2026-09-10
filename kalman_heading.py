@@ -11,9 +11,9 @@ t_gyr = df_gyr["seconds_elapsed"].to_numpy()
 yaw_rate = df_gyr["z"].to_numpy()  # rad/s
 
 dt = np.diff(t_gyr, prepend=t_gyr[0])
-mean_dt = np.mean(dt[1:])  # dt[0] is the artificial 0 we inserted, skip it
+mean_dt = np.mean(dt[1:]) # dt[0] is the artificial 0 we inserted, skip it
 
-heading_gyro_rad = np.cumsum(yaw_rate * dt)  # raw, uncorrected - kept only for comparison
+heading_gyro_rad = np.cumsum(yaw_rate * dt) # Raw and uncorrected
 
 ### Magnetometer ###
 

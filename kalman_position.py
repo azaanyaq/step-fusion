@@ -26,7 +26,7 @@ yaw_rate = df_gyr["z"].to_numpy()
 
 dt = np.diff(t_gyr, prepend=t_gyr[0])
 mean_dt = np.mean(dt[1:])
-heading_gyro_rad = np.cumsum(yaw_rate * dt)  # raw, uncorrected
+heading_gyro_rad = np.cumsum(yaw_rate * dt) # Raw and uncorrected
 
 ### Magnetometer ###
 
@@ -69,7 +69,7 @@ heading_kf_rad = np.array(theta_history)
 ### Position dead-reckoning: build a path from any heading array + its own timeline ###
 
 STEP_LENGTH_M = 0.73
-step_times = t_acc[peak_indices]  # seconds, from the step detector's timeline
+step_times = t_acc[peak_indices] # Seconds from the step detector's timeline
 
 
 def build_path(heading_array, heading_time_array):
@@ -80,18 +80,10 @@ def build_path(heading_array, heading_time_array):
         y.append(y[i] + STEP_LENGTH_M * np.sin(step_headings[i]))
     return x, y
 
-
-# heading_gyro_rad starts at an arbitrary 0 (whatever direction you faced at
-# t=0), while heading_kf_rad starts at the magnetometer's real-world-anchored
-# value. Shift the raw heading to start at that same reference point before
-# building its path - otherwise the two paths are drawn in different rotated
-# coordinate frames, which distorts the comparison regardless of how good or
-# bad the filter actually is.
+# Shift the raw heading to start at the mahnetomerer's real value
 heading_gyro_rad_aligned = heading_gyro_rad - heading_gyro_rad[0] + heading_kf_rad[0]
 
-# Same logic as interp.py, called twice - once per heading source - instead of
-# duplicating the loop, since the only thing that changes is which heading
-# array (and its matching timeline) gets passed in.
+# Same as interp.py
 x_raw, y_raw = build_path(heading_gyro_rad_aligned, t_gyr)
 x_kf, y_kf = build_path(heading_kf_rad, t_gyr)
 
