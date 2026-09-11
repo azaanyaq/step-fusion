@@ -1,6 +1,6 @@
-# PDR + Kalman Filter (iPhone IMU)
+# StepFusion
 
-![PDR + Kalman Filter result](thumbnail.png)
+![StepFusion result](thumbnail.png)
 
 Pedestrian Dead Reckoning from real phone IMU data (Sensor Logger iOS app),
 fused with a Kalman filter to reduce heading drift.
