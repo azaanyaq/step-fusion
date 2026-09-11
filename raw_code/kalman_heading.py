@@ -8,7 +8,7 @@ DATA_DIR = "/Users/azaanyaqub/Developer/kalman-filter/iphone-project/data/raw/de
 
 df_gyr = pd.read_csv(f"{DATA_DIR}/Gyroscope.csv")
 t_gyr = df_gyr["seconds_elapsed"].to_numpy()
-yaw_rate = df_gyr["z"].to_numpy()  # rad/s
+yaw_rate = df_gyr["z"].to_numpy() # ( rad/s )
 
 dt = np.diff(t_gyr, prepend=t_gyr[0])
 mean_dt = np.mean(dt[1:]) # dt[0] is the artificial 0 we inserted, skip it

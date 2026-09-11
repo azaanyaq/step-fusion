@@ -8,7 +8,7 @@ t = df_gyr["seconds_elapsed"].to_numpy()
 yaw_rate = df_gyr["z"].to_numpy() # Rotation rate around the phone's vertical axis (in rad/s)
 
 # Time gap between each sample and the prior one
-dt = np.diff(t, prepend=t[0]) # prepend inserts a virtual point = t[0] first so dt[0] = 0
+dt = np.diff(t, prepend=t[0]) # Prepend inserts a virtual point = t[0] first so dt[0] = 0
 
 # Discrete integration ( sigma(w*dt) ) to get the angle in rads
 heading_rad = np.cumsum(yaw_rate * dt)
