@@ -110,6 +110,12 @@ python3 main.py
 `ros/stepfusion/` reimplements the pipeline in C++17 so it runs **live**,
 one sample at a time, as a ROS 2 (Jazzy) node.
 
+![demo_6 replayed through the ROS 2 node, viewed in Foxglove](foxglove.png)
+
+*`demo_6` replayed as a rosbag through `stepfusion_node`, viewed live in
+Foxglove: Kalman-fused path (purple) vs. gyro-only path (yellow), with the
+raw IMU/magnetometer streams and the fused heading on the right.*
+
 - **Core library** (`include/`, `src/` minus the node) - CSV loading, the
   heading Kalman filter, a live step detector and the dead-reckoning
   logic. No ROS headers anywhere in it.
