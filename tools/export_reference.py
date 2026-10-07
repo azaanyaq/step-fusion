@@ -1,18 +1,6 @@
 """
-Export the Python pipeline's intermediate and final outputs as CSV reference
-files, so the C++ port can be tested against them without needing Python.
-
-Run from the repo root:
-    python tools/export_reference.py
-
-Writes test_data/reference/<recording>/:
-    heading.csv - one row per gyro sample: t, gyro_heading, mag_heading, kf_heading
-    steps.csv   - one row per detected step: sample index, time
-    path.csv    - one row per path point: raw_x, raw_y, kf_x, kf_y
-    summary.csv - key,value scalars (Q, R, theta0, closing distances, ...)
-
-Floats are written with 17 significant digits so they round-trip exactly to
-a C++ double.
+Exports the Python pipeline's outputs as CSVs (test_data/reference/<recording>/)
+so the C++ tests can compare against them. Run from the repo root.
 """
 
 import os
@@ -35,8 +23,7 @@ from pdr_pipeline import (  # noqa: E402
     run_kalman_filter,
 )
 
-# Copied from main.py (main.py runs its plots at import time, so it can't be
-# imported). Keep these in sync with main.py if either changes.
+# Copied from main.py (importing it would run its plots), keep in sync
 R_MULTIPLIER = 1000
 RECORDINGS = {
     "demo_4": {"stationary_window_s": (0.0, 3.5), "straight_window_s": (7.0, 9.3)},
@@ -44,15 +31,14 @@ RECORDINGS = {
     "demo_6": {"stationary_window_s": (0.0, 1.5), "straight_window_s": (57.0, 58.5)},
 }
 
-FLOAT_FORMAT = "%.17g"
+FLOAT_FORMAT = "%.17g" # Enough digits to round trip a double exactly
 OUT_ROOT = "test_data/reference"
 
 
 def export(name, config):
     rec = load_recording(f"data/raw/{name}")
 
-    # The C++ filter will use "latest magnetometer sample" rather than np.interp.
-    # Those are identical only if all three sensors share timestamps - check it.
+    # C++ uses the latest mag sample instead of np.interp, only identical if timestamps match
     if not (np.array_equal(rec["t_acc"], rec["t_gyr"]) and np.array_equal(rec["t_gyr"], rec["t_mag"])):
         raise RuntimeError(f"{name}: sensor timestamps differ - golden KF comparison would not be exact")
 

@@ -1,36 +1,10 @@
 """
-Convert a Sensor Logger recording (Accelerometer/Gyroscope/Magnetometer CSVs)
-into a ROS 2 bag that `ros2 bag play` can replay into the StepFusion node.
+Converts a Sensor Logger recording into a ROS 2 bag (data/bags/<recording>/), run from the repo root:
+    python tools/csv_to_bag.py demo_6
 
-Uses the pure-Python `rosbags` library, so it runs with or without ROS
-installed (pip install rosbags).
-
-Run from the repo root:
-    python tools/csv_to_bag.py demo_6            -> data/bags/demo_6/
-    python tools/csv_to_bag.py demo_4 demo_5 demo_6
-
-Topics written:
-    /imu/data_raw  sensor_msgs/Imu            gyro (rad/s) + accel (m/s^2)
-    /imu/mag       sensor_msgs/MagneticField  field in Tesla (CSV is uT)
-
-Decisions baked in here - each one is yours to defend, revisit in session 7:
-
-  - Topic names follow the imu_tools convention (data_raw = no orientation
-    estimate yet, mag alongside it).
-  - Data is left in the phone's own axes, frame_id "phone_imu". Mapping that
-    to base_link (REP-103) is a static transform in the launch file, not
-    something this script fakes by rotating numbers.
-  - Accelerometer is written AS RECORDED, i.e. with gravity already removed
-    by iOS. REP-145 says Imu.linear_acceleration should include gravity, so
-    these messages knowingly break that convention.
-  - orientation_covariance[0] = -1 (message docs: "no orientation estimate").
-    Other covariances are all zero, which the docs define as "unknown".
-  - Header stamps and bag timestamps are the CSV's `time` column (epoch ns),
-    i.e. when the phone sampled, not when this script ran.
-  - At equal timestamps the mag message is written before the Imu message,
-    so a node that processes in arrival order sees the same-instant mag
-    reading when a step fires (matching the Python reference). ROS itself
-    does not guarantee ordering across topics, so the node must not rely on it.
+  - /imu/data_raw (sensor_msgs/Imu): gyro + accel, accel left with gravity removed (breaks REP-145)
+  - /imu/mag (sensor_msgs/MagneticField): converted from uT to Tesla
+  - Left in the phone's own axes (frame_id phone_imu), stamped with the CSV's time column
 """
 
 import os
@@ -69,7 +43,7 @@ def convert(name):
     gyr = pd.read_csv(f"{data_dir}/Gyroscope.csv")
     mag = pd.read_csv(f"{data_dir}/Magnetometer.csv")
 
-    # One Imu message carries gyro + accel together, so they must be sampled together
+    # One Imu message carries both, so they must share timestamps
     if not np.array_equal(acc["time"].to_numpy(), gyr["time"].to_numpy()):
         raise SystemExit(f"{name}: accelerometer and gyroscope timestamps differ - can't pair them into Imu messages")
 
@@ -77,7 +51,7 @@ def convert(name):
     no_orientation[0] = -1.0
     unknown = np.zeros(9)
 
-    # (timestamp_ns, write_order, topic, serialized message); write_order puts mag first at equal times
+    # (timestamp, order, topic, data) - mag written first on equal timestamps
     events = []
 
     for t_ns, mx, my, mz in mag[["time", "x", "y", "z"]].itertuples(index=False):

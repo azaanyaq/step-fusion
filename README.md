@@ -15,7 +15,12 @@ fused with a Kalman filter to reduce heading drift.
   filter, the R-value sweeps that diagnosed why, and the per-step-update
   redesign that fixed it. Kept for reference.
 - **`data/raw/`** - the recorded walks (see table below).
-- **`requirements.txt`**, **`.venv/`** - numpy, pandas, scipy, matplotlib.
+- **`ros/stepfusion/`** - C++17 / ROS 2 port of the pipeline (see
+  [C++ / ROS 2 port](#c--ros-2-port) below).
+- **`tools/`** - `export_reference.py` (Python outputs → CSV reference
+  files for the C++ tests) and `csv_to_bag.py` (recordings → ROS 2 bags).
+- **`test_data/reference/`** - those exported Python outputs.
+- **`requirements.txt`**, **`.venv/`** - numpy, pandas, scipy, matplotlib, rosbags.
 
 ## Data format (Sensor Logger CSV)
 
@@ -98,4 +103,77 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 python3 main.py
+```
+
+## C++ / ROS 2 port
+
+`ros/stepfusion/` reimplements the pipeline in C++17 so it runs **live**,
+one sample at a time, as a ROS 2 (Jazzy) node.
+
+- **Core library** (`include/`, `src/` minus the node) - CSV loading, the
+  heading Kalman filter, a live step detector and the dead-reckoning
+  logic. No ROS headers anywhere in it.
+- **`stepfusion_node`** - thin rclcpp wrapper: subscribes to
+  `sensor_msgs/Imu` + `sensor_msgs/MagneticField`, publishes the fused and
+  gyro-only paths (`nav_msgs/Path`) and heading. Parameters in
+  `config/<recording>.yaml`; `launch/replay.launch.py` plays a recorded walk
+  as a rosbag into the node, viewable live in Foxglove via `foxglove_bridge`
+  (or recorded to an output bag with `record:=true` and opened offline).
+- **`replay_csv`** - runs the same core straight from the CSVs, no ROS.
+- **Tests** (GoogleTest) - hand-checkable synthetic cases (constant yaw rate,
+  gain = 0.5 when P = R, R → ∞ ignores the magnetometer, ±180° wrap, step
+  detector thresholds/gap) plus golden tests against the Python outputs.
+
+**What had to change to run live:**
+
+- `find_peaks(prominence=...)` needs the dip *after* a peak, i.e. the whole
+  recording. Replaced with a two-threshold (hysteresis) detector: enter a
+  peak above 2.0 m/s², confirm the step once it falls below 1.3 m/s²,
+  0.4 s minimum gap. Steps are confirmed a median 40-90 ms after their peak.
+- `np.unwrap` on the whole magnetometer signal is replaced by wrapping each
+  innovation (magnetometer − predicted heading) into [−π, π].
+- The heading used for each step is the heading when the step is
+  *confirmed*, not at its peak - a live system can't go back in time.
+
+**Verification**: given Python's step times, the C++ filter reproduces
+Python's heading at every sample and every path point to within 1e-9 on
+all three recordings. Running fully live (its own step detector):
+
+| recording | live steps | raw closing | fused | improvement | Python (batch) |
+|---|---|---|---|---|---|
+| `demo_4` | 17 | 1.948 m | 2.125 m | -9.1% | -12.6% |
+| `demo_5` | 25 | 1.513 m | 1.552 m | -2.6% | -0.8% |
+| `demo_6` | 158 | 2.907 m | 2.507 m | **+13.8%** | +12.7% |
+
+Same conclusion as the Python version: fusion helps only on the long walk.
+The absolute numbers move, and the causes were checked rather than assumed:
+on `demo_4` it's the confirmation delay (a Python replica of the detector
+using headings at peak time gives 1.383 m, ≈ Python's 1.386 m); on `demo_6`
+it's mostly *which* steps get detected (158 vs. 156; 150 actually walked).
+Closing distance is clearly sensitive to step timing. The 2.0/1.3 thresholds were chosen
+from these same recordings - there's no held-out data.
+
+**Build and run** (Ubuntu 24.04 + ROS 2 Jazzy, from the repo root):
+
+```bash
+sudo apt install ros-jazzy-foxglove-bridge
+source /opt/ros/jazzy/setup.bash
+colcon build --base-paths ros
+colcon test --base-paths ros && colcon test-result --verbose
+source install/setup.bash
+python tools/csv_to_bag.py demo_6        # needs `pip install rosbags`
+ros2 launch stepfusion replay.launch.py recording:=demo_6
+```
+
+Then in the Foxglove app, open a connection to `ws://<machine IP>:8765`,
+add a **3D** panel (display frame `odom`, enable `/stepfusion_node/path`
+and `/stepfusion_node/path_raw`) and a **Plot** panel for
+`/stepfusion_node/heading.data`.
+
+Core only, no ROS needed (downloads GoogleTest):
+
+```bash
+cmake -S ros/stepfusion -B build-core -DSTEPFUSION_CORE_ONLY=ON
+cmake --build build-core && ctest --test-dir build-core
+./build-core/replay_csv . demo_6
 ```

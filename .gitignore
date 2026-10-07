@@ -4,3 +4,9 @@ __pycache__/
 .DS_Store
 CLAUDE.md
 data/bags/
+
+# colcon build output (run from repo root)
+/build/
+/install/
+/log/
+/build-core/

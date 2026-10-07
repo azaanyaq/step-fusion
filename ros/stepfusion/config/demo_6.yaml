@@ -1,0 +1,12 @@
+# demo_6 (outdoor, long) - Q and R from the Python pipeline (R includes R_MULTIPLIER)
+/**:
+  ros__parameters:
+    process_noise_q: 4.3835112474725193e-06
+    measurement_noise_r: 0.41312518411672006
+    step_length_m: 0.73
+    step_high_threshold: 2.0
+    step_low_threshold: 1.3
+    min_step_gap_s: 0.4
+    frame_id: odom
+    imu_topic: /imu/data_raw
+    mag_topic: /imu/mag
